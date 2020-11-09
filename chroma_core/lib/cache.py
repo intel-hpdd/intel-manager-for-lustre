@@ -20,6 +20,7 @@ class ObjectCache(object):
         from chroma_core.models import NTPConfiguration, StratagemConfiguration, Ticket
         from chroma_core.models.target import ManagedTarget, ManagedTargetMount
         from chroma_core.models.copytool import Copytool
+        from chroma_core.models.hotpools import HotpoolConfiguration, Lamigo, Lpurge
 
         self.objects = defaultdict(dict)
         filter_args = {
@@ -42,6 +43,9 @@ class ObjectCache(object):
             StratagemConfiguration,
             Ticket,
             ServerProfile,
+            HotpoolConfiguration,
+            Lamigo,
+            Lpurge,
         ]
 
         for klass in self._cached_models:

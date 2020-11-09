@@ -1,5 +1,25 @@
 {
   "db": "PostgreSQL",
+  "0359a9984a303eed4a746c81ce60e6ef06277ab9f848139b8b697eaaa5a7d844": {
+    "query": "\n                SELECT id FROM chroma_core_managedfilesystem WHERE name=$1 and not_deleted = 't'\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
   "044c83becc9a4280aa888bab7106a2fb5501c1a205830e57010416e1aaeae1d3": {
     "query": "\n                SELECT\n                (n.id).name AS \"name!\",\n                (n.id).id AS \"id!\",\n                cluster_id,\n                online,\n                standby,\n                standby_onfail,\n                maintenance,\n                pending,\n                unclean,\n                shutdown,\n                expected_up,\n                is_dc,\n                resources_running,\n                type\n                FROM corosync_node n\n                ORDER BY\n                    CASE WHEN $1 = 'ASC' THEN n.id END ASC,\n                    CASE WHEN $1 = 'DESC' THEN n.id END DESC\n                OFFSET $2 LIMIT $3",
     "describe": {
@@ -600,6 +620,27 @@
         false,
         true,
         true
+      ]
+    }
+  },
+  "23088d868cfaf53ac65c5ca22e79a513c358d8e5be5dcc96ac57e712e1e9097c": {
+    "query": "\n            SELECT id FROM chroma_core_ostpool WHERE filesystem_id=$1 AND name=$2 AND not_deleted = 't'\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Text"
+        ]
+      },
+      "nullable": [
+        false
       ]
     }
   },
@@ -2185,6 +2226,106 @@
         false,
         true,
         true
+      ]
+    }
+  },
+  "7da6b70cfc2fea10529d62354a27b6562063d9b3090272cf3d95d907a9280c44": {
+    "query": "\n                SELECT h.id, f.name AS filesystem, h.state, h.state_modified_at, h.ha_label,\n                a.hot_id, a.cold_id, a.extend_id, a.resync_id, a.minage, p.purge_id,\n                h.version::integer as \"version: i32\",\n                p.freehi::integer as \"freehi: i32\",\n                p.freelo::integer as \"freelo: i32\"\n                FROM chroma_core_hotpoolconfiguration h\n                JOIN chroma_core_managedfilesystem f ON h.filesystem_id = f.id\n                JOIN chroma_core_lamigoconfiguration a ON h.id = a.hotpool_id\n                JOIN chroma_core_lpurgeconfiguration p ON h.id = p.hotpool_id\n                WHERE h.not_deleted = 't'\n                ORDER BY\n                    CASE WHEN $3 = 'asc' THEN h.id END ASC,\n                    CASE WHEN $3 = 'desc' THEN h.id END DESC\n                OFFSET $1 LIMIT $2",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "filesystem",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 2,
+          "name": "state",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 3,
+          "name": "state_modified_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 4,
+          "name": "ha_label",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 5,
+          "name": "hot_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 6,
+          "name": "cold_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 7,
+          "name": "extend_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 8,
+          "name": "resync_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 9,
+          "name": "minage",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 10,
+          "name": "purge_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 11,
+          "name": "version: i32",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 12,
+          "name": "freehi: i32",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 13,
+          "name": "freelo: i32",
+          "type_info": "Int4"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8",
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        true,
+        null,
+        null,
+        null
       ]
     }
   },
@@ -4252,6 +4393,26 @@
         ]
       },
       "nullable": []
+    }
+  },
+  "f33988d6a51d579b0c3954b95eec34afa9eaa1849ec6f561659185b39682eb39": {
+    "query": "\n            SELECT hp.id AS id FROM chroma_core_hotpoolconfiguration hp\n            INNER JOIN chroma_core_managedfilesystem fs ON hp.filesystem_id = fs.id\n            WHERE hp.not_deleted = 't' AND fs.not_deleted = 't' AND fs.name=$1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      },
+      "nullable": [
+        false
+      ]
     }
   },
   "f3d07e6786deccc4cf6ffce6d37772de8b5387d2b9f63930e38ed5abdb50df94": {

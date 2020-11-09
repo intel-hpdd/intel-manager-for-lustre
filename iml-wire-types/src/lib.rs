@@ -1999,6 +1999,37 @@ pub struct FidItem {
     pub data: serde_json::Value,
 }
 
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
+#[cfg_attr(feature = "graphql", derive(juniper::GraphQLObject))]
+pub struct HotpoolConfiguration {
+    /// The id of the config
+    pub id: i32,
+    /// The filesystem associated with this target
+    pub filesystem: String,
+    /// Current Hotpool State
+    /// Possible Values: unconfigured, configured, stopped, started, removed
+    pub state: String,
+    pub state_modified_at: DateTime<Utc>,
+    pub ha_label: String,
+    /// Version of Hotpool Config
+    pub version: Option<i32>,
+
+    /// minimum age before mirror to cold pool
+    pub minage: i32,
+    pub freehi: Option<i32>,
+    pub freelo: Option<i32>,
+    /// Hot OstPool
+    pub hot_id: i32,
+    /// Cold OstPool
+    pub cold_id: i32,
+    /// Purge Task id
+    pub purge_id: Option<i32>,
+    /// Resync Task id
+    pub resync_id: Option<i32>,
+    /// Extend Task id
+    pub extend_id: Option<i32>,
+}
+
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct LustreClient {
     pub id: i32,

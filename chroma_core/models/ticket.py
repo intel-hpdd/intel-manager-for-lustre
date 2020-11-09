@@ -7,6 +7,7 @@ from django.db.models import CASCADE, Q
 from chroma_core.lib.job import DependOn, DependAll, Step, job_log
 from chroma_core.models import DeletableDowncastableMetaclass, ManagedFilesystem
 from chroma_core.models import StatefulObject, StateChangeJob, StateLock, Job, AdvertisedJob
+from chroma_core.models.utils import StartResourceStep, StopResourceStep
 from chroma_help.help import help_text
 
 
@@ -136,24 +137,6 @@ class RevokeGrantedTicketJob(StateChangeJob):
 
     def description(self):
         return "Revoke ticket %s" % self.ticket.name
-
-
-class StartResourceStep(Step):
-    idempotent = True
-
-    def run(self, kwargs):
-        host = kwargs["host"]
-        label = kwargs["ha_label"]
-        self.invoke_agent_expect_result(host, "start_target", {"ha_label": label})
-
-
-class StopResourceStep(Step):
-    idempotent = True
-
-    def run(self, kwargs):
-        host = kwargs["host"]
-        label = kwargs["ha_label"]
-        self.invoke_agent_expect_result(host, "stop_target", {"ha_label": label})
 
 
 class ForgetTicketJob(StateChangeJob):

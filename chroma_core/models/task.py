@@ -35,8 +35,8 @@ class Task(models.Model):
     start = models.DateTimeField(null=False)
     finish = models.DateTimeField(null=True, blank=True)
 
-    # states = [ "started", "finished", "closed" ]
-    # Started - Task is started and mailbox is created on servers
+    # states = [ "created", "finished", "closed" ]
+    # Created - Task is started and mailbox is created on servers
     #   - main ingest phase
     #   - outgest can run
     # Finished - Mailbox is removed from servers

@@ -7,7 +7,8 @@ use console::style;
 use futures::{Future, FutureExt};
 use iml_wire_types::{
     snapshot::{ReserveUnit, Snapshot, SnapshotInterval, SnapshotRetention},
-    Command, Filesystem, Host, OstPool, ServerProfile, StratagemConfiguration, StratagemReport,
+    Command, Filesystem, Host, HotpoolConfiguration, OstPool, ServerProfile,
+    StratagemConfiguration, StratagemReport,
 };
 use indicatif::ProgressBar;
 use number_formatter::{format_bytes, format_number};
@@ -259,6 +260,24 @@ impl IntoTable for Vec<Filesystem> {
                     format!("{}", x.client_count.unwrap_or(0)),
                     x.mdts.len().to_string(),
                     x.osts.len().to_string(),
+                ]
+            }),
+        )
+    }
+}
+
+impl IntoTable for Vec<HotpoolConfiguration> {
+    fn into_table(self) -> Table {
+        generate_table(
+            &["id", "FS", "State", "Minage", "Free HI", "Free LO"],
+            self.into_iter().map(|x| {
+                vec![
+                    x.id.to_string(),
+                    x.filesystem,
+                    x.state,
+                    x.minage.to_string(),
+                    x.freehi.unwrap_or(-1).to_string(),
+                    x.freelo.unwrap_or(-1).to_string(),
                 ]
             }),
         )

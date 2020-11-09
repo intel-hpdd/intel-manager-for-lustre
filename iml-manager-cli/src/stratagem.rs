@@ -9,6 +9,7 @@ use crate::{
         DurationParseError, ImlManagerCliError, RunStratagemCommandResult,
         RunStratagemValidationError,
     },
+    hotpool::{hotpool_cli, HotpoolCommand},
 };
 use console::Term;
 use iml_graphql_queries::stratagem as stratagem_queries;
@@ -36,6 +37,8 @@ pub enum StratagemCommand {
         #[structopt(subcommand)]
         command: Option<ReportCommand>,
     },
+    #[structopt(name = "hotpool")]
+    Hotpools(HotpoolCommand),
 }
 
 #[derive(Debug, StructOpt)]
@@ -309,6 +312,9 @@ async fn interval_cli(cmd: IntervalCommand) -> Result<(), ImlManagerCliError> {
 
 pub async fn stratagem_cli(command: StratagemCommand) -> Result<(), ImlManagerCliError> {
     match command {
+        StratagemCommand::Hotpools(command) => {
+            hotpool_cli(command).await?;
+        }
         StratagemCommand::Scan(data) => {
             let query = stratagem_queries::fast_file_scan::build(
                 &data.filesystem,

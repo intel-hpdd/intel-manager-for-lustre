@@ -199,4 +199,9 @@ help_text = {
     "unmount_snapshot": "Unmounting Snapshot",
     "create_snapshot": "Create snapshot with the given name",
     "destroy_snapshot": "Destroy existing snapshot",
+    "create_hotpool": "Create Hotpool configuration",
+    "start_hotpool": "Start data migration between pools",
+    "stop_hotpool": "Stop data migration between pools",
+    "destroy_hotpool": "Destroy existing hotpool",
+    "configure_hotpool": "Create Hotpool configuration files",
 }

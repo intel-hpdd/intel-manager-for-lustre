@@ -10,6 +10,8 @@ from django.db import models, transaction
 from polymorphic.models import DowncastManager
 from polymorphic.models import PolymorphicMetaclass
 
+from chroma_core.lib.job import Step
+
 #  Convert dict used by models and apis
 STR_TO_SEVERITY = dict(
     [
@@ -158,3 +160,149 @@ def get_all_sub_classes(cls):
         subclasses.union(set(get_all_sub_classes(c)))
 
     return subclasses
+
+
+class StartResourceStep(Step):
+    idempotent = True
+
+    def run(self, kwargs):
+        host = kwargs["host"]
+        label = kwargs["ha_label"]
+        self.invoke_rust_agent_expect_result(host, "ha_resource_start", label)
+
+
+class StopResourceStep(Step):
+    idempotent = True
+
+    def run(self, kwargs):
+        host = kwargs["host"]
+        label = kwargs["ha_label"]
+        self.invoke_rust_agent_expect_result(host, "ha_resource_stop", label)
+
+
+class CreateSystemdResourceStep(Step):
+    """
+    Create systemd based pacemaker resource
+    Created resource will be "Started" after constraints are added
+    Args:
+    * host - fqdn to run on
+    * unit - systemd unit name
+    * ha_label - ha_label for unit
+    * start - (optional) start timeout
+    * stop - (optional) stop timeout
+    * monitor - (optional) monitor interval
+    * after - (optional) array of ha_labels to set order contraint to run after
+    * with - (optional) array of ha_labels to set colocation constriant
+    """
+
+    idempotent = True
+
+    def run(self, kwargs):
+        host = kwargs["host"]
+        unit = kwargs["unit"]
+        ha_label = kwargs["ha_label"]
+        start = kwargs.get("start")
+        stop = kwargs.get("stop")
+        monitor = kwargs.get("monitor")
+        after = kwargs.get("after", [])
+        coloc = kwargs.get("with", [])
+
+        # c.f. iml-wire-types::ResourceAgentInfo
+        agent = {
+            "agent": {"standard": "systemd", "ocftype": unit},
+            "id": ha_label,
+            "args": {},
+            "ops": {"start": start, "stop": stop, "monitor": monitor},
+        }
+        constraints = [{"ORDER": {"id": ha_label + "-after-" + r, "first": r, "then": ha_label}} for r in after]
+        constraints.extend(
+            [
+                {"COLOCATION": {"id": ha_label + "-with-" + r, "rsc": ha_label, "with_rsc": r, "score": "INFINITY"}}
+                for r in coloc
+            ]
+        )
+        self.invoke_rust_agent_expect_result(host, "ha_resource_create", [agent, constraints])
+
+
+class RemoveSystemdResourceStep(Step):
+    """
+    Create systemd based pacemaker resource
+    Created resource will be "Started" after constraints are added
+    Args:
+    * host - fqdn to run on
+    * ha_label - ha_label for unit
+    * after - (optional) array of ha_labels to set order contraint to run after
+    * with - (optional) array of ha_labels to set colocation constriant
+    """
+
+    def run(self, kwargs):
+        host = kwargs["host"]
+        ha_label = kwargs["ha_label"]
+        after = kwargs.get("after", [])
+        coloc = kwargs.get("with", [])
+
+        constraints = [ha_label + "-after-" + r for r in after]
+        constraints.extend([ha_label + "-with-" + r for r in coloc])
+
+        self.invoke_rust_agent_expect_result(host, "ha_resource_destroy", [ha_label, constraints])
+
+
+class RemoveResourceStep(Step):
+    """
+    Remove pacemake resource
+    Args:
+    * Host - fqdn to run on
+    * ha_label - resource to remove
+    """
+
+    idempotent = True
+
+    def run(self, kwargs):
+        host = kwargs["host"]
+        label = kwargs["ha_label"]
+        self.invoke_rust_agent_expect_result(host, "ha_resource_destroy", [label, []])
+
+
+class MountStep(Step):
+    """
+    Mount and add to fstab
+    Args:
+    * host - fqdn
+    * mountpoint - Mount point
+    * spec - Mount Spec
+    * auto - (optional def: True) auto mount at boot
+    """
+
+    idempotent = True
+
+    def run(self, kwargs):
+        host = kwargs["host"]
+        persist = kwargs.get("auto", True)
+        mp = kwargs["mountpoint"]
+        spec = kwargs["spec"]
+
+        # cf. iml-wire-types::client::Mount
+        mount = {"persist": persist, "mountspec": spec, "mountpoint": mp}
+        self.invoke_rust_agent_expect_result(host, "mount", mount)
+
+
+class UnmountStep(Step):
+    """
+    Unmount and remove from fstab
+    Args:
+    * host - fqdn
+    * mountpoint - Mount Point
+    * spec - (optional) Mount Spec
+    """
+
+    idempotent = True
+
+    def run(self, kwargs):
+        host = kwargs["host"]
+        mp = kwargs["mountpoint"]
+        spec = kwargs.get("spec", "")
+        # cf. iml-wire-types::client::Unmount
+        unmount = {"mountpoint": mp, "mountspec": spec}
+
+        # unmount call techincally doesn't need the mountspec, and only matches on mountpoint
+        self.invoke_rust_agent_expect_result(host, "unmount", unmount)
